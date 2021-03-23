@@ -17,10 +17,12 @@ class _HomePageState extends State<HomePage> {
   final audioPlayer = AssetsAudioPlayer();
 
   bool playing = false;
+  bool conectando = false;
 
   @override
   void initState() {
     super.initState();
+    conectando = true;
     EasyLoading.instance
       ..loadingStyle = EasyLoadingStyle.custom
       ..maskType = EasyLoadingMaskType.custom
@@ -46,14 +48,26 @@ class _HomePageState extends State<HomePage> {
       notificationSettings: NotificationSettings(
         nextEnabled: false,
         prevEnabled: false,
-        stopEnabled: false
+        stopEnabled: false,
+        customPlayPauseAction: (player) {
+          if ( !conectando ) {
+            conectando = true;
+            player.playOrPause().then((value) {
+              conectando = false;
+              playing = !playing;
+            });
+          }
+            
+        },
       ),
     ).then(( _ ) {
       EasyLoading.dismiss(animation: true);
       playing = !playing;
+      conectando = false;
       setState(() {});
     }).onError((error, stackTrace) {
       EasyLoading.dismiss(animation: false);
+      conectando = false;
       mostrarAlerta(context, 'Ups...', 'Ocurrió un error al reproducir, revisa tu coneccion a internet y si el error persiste infórmanos.');
     });
   }
@@ -117,16 +131,20 @@ class _HomePageState extends State<HomePage> {
       iconSize: 200,
       color: Colors.black,
       icon: Icon( playing ? Icons.pause : Icons.play_arrow ),
-      onPressed: () {
+      onPressed: conectando ? null : () {
         EasyLoading.show(
           status: 'Conectando...'
         );
+        conectando = true;
         audioPlayer.playOrPause().then(( _ ) {
           playing = !playing;
           setState(() {});
           EasyLoading.dismiss(animation: true);
+          
+          conectando = false;
         }).onError((error, stackTrace) {
           EasyLoading.dismiss(animation: false);
+          conectando = false;
           mostrarAlerta(context, 'Ups...', 'Ocurrió un error al reproducir, revisa tu coneccion a internet y si el error persiste infórmanos.');
         });
       },
